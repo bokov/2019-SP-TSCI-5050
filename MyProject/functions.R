@@ -772,7 +772,8 @@ find_path <- function(file,paths=c('.','..')){
   filebase <- basename(file);
   # generate a search-paths for this file, starting with the path component
   # of 'file'
-  filedirs <- normalizePath(unique(c(dirname(file),paths)));
+  filedirs <- if(filebase!=file) dirname(file) else c();
+  filedirs <- normalizePath(unique(c(filedirs,paths)));
   # return the first full path in which the file is found to exist
   for(ii in file.path(filedirs,filebase)) if(file.exists(ii)) return(ii);
   return(c());
