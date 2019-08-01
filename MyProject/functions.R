@@ -766,3 +766,49 @@ personalizeTemplate <- function(file,title='TITLE',author='AUTHOR'
   );
   write(out,file);
 }
+
+find_path <- function(file,paths=c('.','..')){
+  # get the basename of the file
+  filebase <- basename(file);
+  # generate a search-paths for this file, starting with the path component
+  # of 'file'
+  filedirs <- normalizePath(unique(c(dirname(file),paths)));
+  # return the first full path in which the file is found to exist
+  for(ii in file.path(filedirs,filebase)) if(file.exists(ii)) return(ii);
+  return(c());
+}
+
+load_deps <- function(deps,scriptdir=getwd(),cachedir=scriptdir
+                      ,fallbackdir='MyProject',envir=parent.frame()){
+  # what objects got loaded by this function
+  loadedobj=c();
+  for(ii in deps){
+    # if a cached .rdata file for this dependency cannot be found...
+    if(is.null(iicached<-find_path(paste0(ii,'.rdata')
+                                   ,c(cachedir,scriptdir,fallbackdir)))){
+      # run that script and create one
+      if(!is.null(iiscript<-find_path(ii,c(scriptdir,fallbackdir)))){
+        # TODO: modify all files to write their cached results to a user 
+        # specified path if one is provided
+        message(sprintf('Trying to initialize cache using script %s'
+                        ,iiscript));
+        system(sprintf('R -e ".workdir<-\'%s\'; source(\'%s\',chdir=T)"'
+                       ,cachedir,iiscript));
+        # again try to find a valid path to it
+        iicached <- find_path(paste0(ii,'.rdata')
+                              ,c(cachedir,scriptdir,fallbackdir));
+        } else{
+          # if cannot find script, error
+          stop(sprintf('The script %s was not found',ii));
+        }};
+    # if there is still no cached .rdata found, error
+    if(is.null(iicached)){
+      stop(sprintf('The cached file for %s could not be found',iiscript));
+      # otherwise, the cached .rdata now exists one way or another, load it
+    } else {
+      loadedobj <- union(loadedobj,tload(iicached,envir=envir));
+      message(sprintf('Loaded data for %s from %s',ii,iicached));
+      };
+  }
+  return(loadedobj);
+}
