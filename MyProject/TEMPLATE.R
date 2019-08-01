@@ -29,11 +29,14 @@ if(debug>0) source('%7$s',chdir=T) else {
 if(length(.packages) > 1 || .packages != '') instrequire(.packages);
 # start logging
 tself(scriptname=.currentscript);
-# track what objects here come from other scripts
-.origfiles <- ls(); .loadedobjects <- c(); .workdir <- getwd();
+# Use the workdir
+.workdir <- getwd();
 # run scripts on which this one depends, if any that have not been
 # cached yet
 .loadedobjects <- load_deps(.deps,cachedir = .workdir);
+
+# which files are here before anything new is created by this script
+.origfiles <- ls(all=T);
 
 #+ echo=F
 #############################################################
