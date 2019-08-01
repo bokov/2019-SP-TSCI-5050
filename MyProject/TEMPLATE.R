@@ -31,8 +31,7 @@ if(length(.packages) > 1 || .packages != '') instrequire(.packages);
 tself(scriptname=.currentscript);
 # Use the workdir
 .workdir <- getwd();
-# run scripts on which this one depends, if any that have not been
-# cached yet
+# run scripts on which this one depends, if any that have not been cached yet
 .loadedobjects <- load_deps(.deps,cachedir = .workdir);
 
 # which files are here before anything new is created by this script
