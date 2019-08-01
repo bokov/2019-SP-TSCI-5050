@@ -749,12 +749,23 @@ fs <- function(str,text=str,url=paste0('#',gsub('[^_a-z0-9]','-',tolower(str)))
 # Project Utilities ----
 personalizeTemplate <- function(file,title='TITLE',author='AUTHOR'
                                 ,deps=c('dictionary.R'),packages=c()
-                                ,date=Sys.Date(),template='TEMPLATE.R'){
-  if(!all(deps %in% (.files <- list.files()))){
-    stop(
-      "Of the files you specified in the 'deps' argument the following are missing:\n"
-      ,paste0(setdiff(deps,.files),collapse=', '))};
-  out <- sprintf(readLines(template)
+                                ,date=Sys.Date(),template='TEMPLATE.R'
+                                ,path_to_global
+                                ,paths=c('.','..','MyProject')){
+  if(length(deps)>0){
+    .files <- sapply(deps,function(ii) !is.null(find_path(ii,paths)));
+    if(!all(.files)) stop(
+"Of the files you specified in the 'deps' argument the following are missing:\n"
+      ,paste0(deps[!.files],collapse=', '))};
+  # make sure the template exists
+  whichtemplate <- find_path(template,paths);
+  if(is.null(whichtemplate)) stop(sprintf('Cannot find file %s',template));
+  # make sure global.R exists
+  if(missing(path_to_global)) path_to_global<-grep('global.R'
+                                                   ,list.files(recursive = T)
+                                                   ,val=T);
+  if(length(path_to_global)==0) stop("Cannot find file 'global.R'");
+  out <- sprintf(readLines(whichtemplate)
                  ,title # The title that will appear in the header
                  ,author # Author, ditto
                  ,format(date,'%d/%m/%Y') # Date, ditto
@@ -763,6 +774,8 @@ personalizeTemplate <- function(file,title='TITLE',author='AUTHOR'
                  ,file # ...so the file knows it's own name!
                  # dependencies on previously run files
                  ,paste('c(',paste0("'",deps,"'",collapse=','),')')
+                 # location of global.R
+                 ,path_to_global[1]
   );
   write(out,file);
 }
@@ -781,6 +794,7 @@ find_path <- function(file,paths=c('.','..')){
 
 load_deps <- function(deps,scriptdir=getwd(),cachedir=scriptdir
                       ,fallbackdir='MyProject',envir=parent.frame()){
+  if(length(deps)==0||identical(deps,'')){message('No dependencies.');return();}
   # what objects got loaded by this function
   loadedobj=c();
   for(ii in deps){
